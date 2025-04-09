@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./index.css";
 import directionsData from "./directions";
+import QRCode from "qrcode.react"; // ✅ Corrected import
 
 function App() {
   const [currentLocation, setCurrentLocation] = useState("");
@@ -41,6 +42,9 @@ function App() {
     speak(speech);
   };
 
+  // 🆕 Construct QR URL based on current location
+  const qrUrl = `https://nirajsink.github.io/Atria-Navigation/?location=${encodeURIComponent(currentLocation)}`;
+
   return (
     <div className="container">
       <h1>📍 Smart QR Campus Navigator</h1>
@@ -50,6 +54,15 @@ function App() {
           ? `📌 You are at: ${currentLocation}`
           : "⚠️ Please scan QR to detect your location."}
       </div>
+
+      {/* 🆕 Show QR if location is available */}
+      {currentLocation && (
+        <div style={{ margin: "20px 0", textAlign: "center" }}>
+          <h3>🧾 Share this QR for location</h3>
+          <QRCode value={qrUrl} size={180} />
+          <p style={{ fontSize: "12px", marginTop: "10px", wordBreak: "break-all" }}>{qrUrl}</p>
+        </div>
+      )}
 
       <div className="selector">
         <label>🎯 Where do you want to go?</label>

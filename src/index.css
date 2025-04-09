@@ -69,3 +69,22 @@ button:hover {
   margin-bottom: 20px;
   text-align: center;
 }
+
+/* 👇 QR code container style added */
+.qr-container {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.qr-container h3 {
+  font-size: 1.1rem;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.qr-container p {
+  font-size: 13px;
+  word-break: break-all;
+  color: #666;
+  margin-top: 8px;
+}
