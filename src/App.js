@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import "./index.css";
 import directionsData from "./directions";
-import QRCode from "qrcode.react"; // ✅ Corrected import
+import QRCode from "qrcode.react";
 
 function App() {
   const [currentLocation, setCurrentLocation] = useState("");
   const [destination, setDestination] = useState("");
   const [steps, setSteps] = useState([]);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   // Read from QR (URL) on page load
   useEffect(() => {
@@ -22,16 +23,28 @@ function App() {
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = "en-US";
     synth.cancel();
+    
+    setIsSpeaking(true);
+    utter.onend = () => setIsSpeaking(false);
+    
     synth.speak(utter);
   };
 
   const getDirections = () => {
     setSteps([]);
-    if (!currentLocation || !destination) return;
+    if (!currentLocation || !destination) {
+      setSteps([{ icon: "fa-exclamation-triangle", text: "Please select both your location and destination." }]);
+      return;
+    }
+
+    if (currentLocation === destination) {
+      setSteps([{ icon: "fa-info-circle", text: "You are already at this location." }]);
+      return;
+    }
 
     const directionList = directionsData[currentLocation]?.[destination];
     if (!directionList) {
-      setSteps([{ icon: "fa-exclamation-circle", text: "No directions available." }]);
+      setSteps([{ icon: "fa-exclamation-circle", text: "No directions available for this route." }]);
       return;
     }
 
@@ -42,47 +55,63 @@ function App() {
     speak(speech);
   };
 
-  // 🆕 Construct QR URL based on current location
+  // Construct QR URL based on current location
   const qrUrl = `https://nirajsink.github.io/Atria-Navigation/?location=${encodeURIComponent(currentLocation)}`;
+
+  // Get available destinations from directions data
+  const availableDestinations = Object.keys(directionsData).filter(loc => loc !== currentLocation);
 
   return (
     <div className="container">
-      <h1>📍 Smart QR Campus Navigator</h1>
+      <h1>
+        <i className="fas fa-map-marked-alt"></i> Smart QR Campus Navigator
+      </h1>
 
-      <div className="popup">
+      <div className={`popup ${!currentLocation ? 'warning' : ''}`}>
         {currentLocation
-          ? `📌 You are at: ${currentLocation}`
-          : "⚠️ Please scan QR to detect your location."}
+          ? <><i className="fas fa-map-marker-alt"></i> You are at: <strong>{currentLocation}</strong></>
+          : <><i className="fas fa-exclamation-triangle"></i> Please scan a QR code to detect your location.</>}
       </div>
 
-      {/* 🆕 Show QR if location is available */}
       {currentLocation && (
-        <div style={{ margin: "20px 0", textAlign: "center" }}>
-          <h3>🧾 Share this QR for location</h3>
-          <QRCode value={qrUrl} size={180} />
-          <p style={{ fontSize: "12px", marginTop: "10px", wordBreak: "break-all" }}>{qrUrl}</p>
+        <div className="qr-container">
+          <h3><i className="fas fa-qrcode"></i> Share this location</h3>
+          <QRCode value={qrUrl} size={180} level="H" renderAs="svg" includeMargin={true} />
+          <div className="qr-url">{qrUrl}</div>
         </div>
       )}
 
       <div className="selector">
-        <label>🎯 Where do you want to go?</label>
+        <label><i className="fas fa-location-arrow"></i> Where do you want to go?</label>
         <select value={destination} onChange={e => setDestination(e.target.value)}>
           <option value="">--Select Destination--</option>
-          <option value="CSE HOD Cabin">CSE HOD Cabin</option>
-          <option value="Seminar Hall">Seminar Hall</option>
-          <option value="MBA Department">MBA Department</option>
+          {availableDestinations.map(dest => (
+            <option key={dest} value={dest}>{dest}</option>
+          ))}
+          {!currentLocation && Object.keys(directionsData).map(loc => (
+            <option key={loc} value={loc}>{loc}</option>
+          ))}
         </select>
-        <button onClick={getDirections}>Get Directions</button>
+        <button onClick={getDirections} disabled={isSpeaking}>
+          {isSpeaking ? (
+            <><i className="fas fa-volume-up fa-pulse"></i> Speaking...</>
+          ) : (
+            <><i className="fas fa-directions"></i> Get Directions</>
+          )}
+        </button>
       </div>
 
-      <div className="output">
-        {steps.map((step, index) => (
-          <div className="step" key={index}>
-            <i className={`fas ${step.icon}`}></i>
-            {step.text}
-          </div>
-        ))}
-      </div>
+      {steps.length > 0 && (
+        <div className="output">
+          <h3><i className="fas fa-route"></i> Directions:</h3>
+          {steps.map((step, index) => (
+            <div className="step" key={index}>
+              <i className={`fas ${step.icon}`}></i>
+              <span>{step.text}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
